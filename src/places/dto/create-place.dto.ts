@@ -1,7 +1,6 @@
-import { IsString, IsNotEmpty, IsIn, IsOptional, IsArray } from 'class-validator';
-
-const CATEGORIES = ['STUDY_SPACE', 'LIBRARY', 'FOOD_SERVICE', 'SPORTS', 'STUDENT_SERVICE', 'COMPUTER_LAB', 'OTHER'];
-const STATUSES = ['ACTIVE', 'TEMPORARILY_CLOSED', 'INACTIVE'];
+import { IsString, IsNotEmpty, IsEnum, IsOptional, IsArray } from 'class-validator';
+import { PlaceCategory } from '../enums/place-category.enum';
+import { PlaceStatus } from '../enums/place-status.enum';
 
 export class CreatePlaceDto {
   @IsString()
@@ -12,8 +11,8 @@ export class CreatePlaceDto {
   @IsNotEmpty()
   description: string;
 
-  @IsIn(CATEGORIES)
-  category: string;
+  @IsEnum(PlaceCategory)
+  category: PlaceCategory;
 
   @IsString()
   @IsNotEmpty()
@@ -25,6 +24,6 @@ export class CreatePlaceDto {
   services?: string[];
 
   @IsOptional()
-  @IsIn(STATUSES)
-  status?: string;
+  @IsEnum(PlaceStatus)
+  status?: PlaceStatus;
 }
