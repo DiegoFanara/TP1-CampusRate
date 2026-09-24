@@ -33,6 +33,10 @@ export class ReviewsService {
 
   async findAllForPlace(placeId: string): Promise<Review[]> {
     const data = await this.databaseService.read();
+    const place = data.places.find((p) => p.id === placeId);
+    
+    if (!place) throw new NotFoundException(`Place ${placeId} introuvable`);
+
     return data.reviews.filter((r) => r.placeId === placeId);
   }
 
@@ -71,7 +75,10 @@ export class ReviewsService {
     await this.databaseService.write(data);
   }
 
-  private recalculatePlaceRating(data: { places: Place[]; reviews: Review[] }, placeId: string): void {
+  private recalculatePlaceRating(
+    data: { places: Place[]; reviews: Review[] },
+    placeId: string,
+  ): void {
     const place = data.places.find((p) => p.id === placeId);
     if (!place) return;
 
