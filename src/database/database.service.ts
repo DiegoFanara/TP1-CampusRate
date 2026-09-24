@@ -1,10 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { Place } from '../places/entities/place.entity';
+import { Review } from '../reviews/entities/review.entity';
 
 interface DbShape {
-  places: any[];
-  reviews: any[];
+  places: Place[];
+  reviews: Review[];
 }
 
 @Injectable()
