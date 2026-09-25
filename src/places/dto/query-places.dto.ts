@@ -1,11 +1,11 @@
-import { IsOptional, IsIn, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsIn, IsInt, Min, Max, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PlaceCategory } from '../enums/place-category.enum';
 
-const CATEGORIES = ['STUDY_SPACE', 'LIBRARY', 'FOOD_SERVICE', 'SPORTS', 'STUDENT_SERVICE', 'COMPUTER_LAB', 'OTHER'];
 
 export class QueryPlacesDto {
   @IsOptional()
-  @IsIn(CATEGORIES)
+  @IsEnum(PlaceCategory)
   category?: string;
 
   @IsOptional()
