@@ -1,114 +1,310 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CampusRate API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST développée avec **NestJS** et **TypeScript** qui permet de consulter des endroits du campus (bibliothèque, cafétéria, laboratoires, etc.) et de les évaluer au moyen d'avis. Les données sont persistées dans un fichier JSON local.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> Travail pratique 1 — cours 420-514, Cégep Marie-Victorin, automne 2026
+> Auteur : Diego Fanara Alvarez
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Table des matières
 
-## Project setup
+1. [Fonctionnalités](#fonctionnalités)
+2. [Technologies](#technologies)
+3. [Prérequis](#prérequis)
+4. [Installation et démarrage](#installation-et-démarrage)
+5. [Configuration](#configuration)
+6. [Structure du projet](#structure-du-projet)
+7. [Modèle de données](#modèle-de-données)
+8. [Endpoints](#endpoints)
+9. [Filtrage et pagination](#filtrage-et-pagination)
+10. [Règles métier](#règles-métier)
+11. [Validation et gestion des erreurs](#validation-et-gestion-des-erreurs)
+12. [Documentation Swagger](#documentation-swagger)
+13. [Tests avec Postman](#tests-avec-postman)
+14. [Workflow Git](#workflow-git)
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## Fonctionnalités
 
-```bash
-# development
-$ npm run start
+- CRUD complet sur deux ressources : **places** (endroits) et **reviews** (avis)
+- Ressource imbriquée : création et liste des avis sous `/places/{placeId}/reviews`
+- Calcul automatique de la note moyenne (`averageRating`) et du nombre d'avis (`reviewCount`) d'un endroit
+- Filtrage par catégorie et pagination sur la liste des endroits
+- Validation des entrées avec `class-validator` (rejet des champs inconnus)
+- Réponses d'erreur normalisées au format **Problem Details** (RFC 9457)
+- Persistance dans un fichier JSON (`data/db.json`) via `node:fs/promises`
+- Documentation interactive **Swagger / OpenAPI**
+- Collection **Postman** fournie
 
-# watch mode
-$ npm run start:dev
+## Technologies
 
-# production mode
-$ npm run start:prod
-```
+| Outil | Rôle |
+|---|---|
+| [NestJS](https://docs.nestjs.com) 12 | Framework back-end |
+| TypeScript | Langage |
+| class-validator / class-transformer | Validation et transformation des DTO |
+| @nestjs/swagger | Génération de la documentation OpenAPI |
+| node:fs/promises | Persistance JSON |
+| Postman | Tests manuels de l'API |
+| oxlint / Prettier | Qualité et formatage du code |
 
-## Run tests
+## Prérequis
 
-```bash
-# unit tests
-$ npm run test
+- [Node.js](https://nodejs.org) 20 ou plus récent
+- npm
+- (Optionnel) [Postman](https://www.postman.com/downloads/)
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Installation et démarrage
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# 1. Cloner le dépôt
+git clone https://github.com/DiegoFanara/TP1-CampusRate.git
+cd TP1-CampusRate
+
+# 2. Installer les dépendances
+npm install
+
+# 3. Lancer l'API en mode développement (rechargement automatique)
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+L'API est ensuite accessible à l'adresse **http://localhost:3000/api/v1**.
 
-## Observability
+Autres commandes utiles :
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+| Commande | Description |
+|---|---|
+| `npm run start` | Démarrage simple |
+| `npm run build` | Compilation dans `dist/` |
+| `npm run start:prod` | Exécution de la version compilée |
+| `npm run lint` | Analyse statique avec oxlint |
+| `npm run format` | Formatage avec Prettier |
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+## Configuration
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+Un fichier `.env.example` est fourni à titre de référence.
 
-## Resources
+| Variable | Défaut | Description |
+|---|---|---|
+| `PORT` | `3000` | Port d'écoute du serveur |
 
-Check out a few resources that may come in handy when working with NestJS:
+Le fichier de données `data/db.json` est **créé automatiquement** au premier démarrage avec la structure `{ "places": [], "reviews": [] }`. Il est ignoré par Git.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Structure du projet
 
-## Support
+```
+src/
+├── main.ts                        # Bootstrap : préfixe global, ValidationPipe, filtre d'erreurs, Swagger
+├── app.module.ts                  # Module racine
+├── common/
+│   └── filters/
+│       └── problem-details.filter.ts   # Formatage des erreurs (RFC 9457)
+├── database/
+│   ├── database.module.ts
+│   └── database.service.ts        # Lecture / écriture du fichier data/db.json
+├── places/
+│   ├── dto/                       # CreatePlaceDto, UpdatePlaceDto, QueryPlacesDto
+│   ├── entities/place.entity.ts
+│   ├── enums/                     # PlaceCategory, PlaceStatus
+│   ├── places.controller.ts
+│   ├── places.module.ts
+│   └── places.service.ts
+└── reviews/
+    ├── dto/                       # CreateReviewDto, UpdateReviewDto
+    ├── entities/review.entity.ts
+    ├── reviews.controller.ts
+    ├── reviews.module.ts
+    └── reviews.service.ts
+postman_collection.json            # Collection Postman
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Modèle de données
 
-## Stay in touch
+### Place
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+| Champ | Type | Obligatoire à la création | Description |
+|---|---|---|---|
+| `id` | `string` (UUID) | généré | Identifiant unique |
+| `name` | `string` | oui | Nom de l'endroit |
+| `description` | `string` | oui | Description |
+| `category` | `PlaceCategory` | oui | Catégorie (voir ci-dessous) |
+| `address` | `string` | oui | Emplacement (ex. local, pavillon) |
+| `services` | `string[]` | non (défaut `[]`) | Services offerts |
+| `status` | `PlaceStatus` | non (défaut `ACTIVE`) | Statut de l'endroit |
+| `averageRating` | `number \| null` | calculé | Moyenne des notes, `null` s'il n'y a aucun avis |
+| `reviewCount` | `number` | calculé | Nombre d'avis |
+| `createdAt` / `updatedAt` | `string` (ISO 8601) | générés | Dates de création et de modification |
 
-## License
+**`PlaceCategory`** : `STUDY_SPACE`, `LIBRARY`, `FOOD_SERVICE`, `SPORTS`, `STUDENT_SERVICE`, `COMPUTER_LAB`, `OTHER`
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+**`PlaceStatus`** : `ACTIVE`, `TEMPORARILY_CLOSED`, `INACTIVE`
+
+### Review
+
+| Champ | Type | Obligatoire à la création | Contraintes |
+|---|---|---|---|
+| `id` | `string` (UUID) | généré | |
+| `placeId` | `string` | tiré de l'URL | Doit référencer un endroit existant |
+| `authorsName` | `string` | oui | Non vide |
+| `rating` | `integer` | oui | Entre 1 et 5 |
+| `comment` | `string` | oui | Entre 10 et 500 caractères |
+| `createdAt` / `updatedAt` | `string` (ISO 8601) | générés | |
+
+## Endpoints
+
+Toutes les routes sont préfixées par **`/api/v1`**.
+
+### Places
+
+| Méthode | Route | Description | Succès |
+|---|---|---|---|
+| `POST` | `/places` | Créer un endroit | `201` |
+| `GET` | `/places` | Lister les endroits (filtrage + pagination) | `200` |
+| `GET` | `/places/{id}` | Consulter un endroit | `200` |
+| `PATCH` | `/places/{id}` | Modifier partiellement un endroit | `200` |
+| `DELETE` | `/places/{id}` | Supprimer un endroit et ses avis | `200` |
+
+### Reviews
+
+| Méthode | Route | Description | Succès |
+|---|---|---|---|
+| `POST` | `/places/{placeId}/reviews` | Ajouter un avis à un endroit | `201` |
+| `GET` | `/places/{placeId}/reviews` | Lister les avis d'un endroit | `200` |
+| `GET` | `/reviews/{id}` | Consulter un avis | `200` |
+| `PATCH` | `/reviews/{id}` | Modifier partiellement un avis | `200` |
+| `DELETE` | `/reviews/{id}` | Supprimer un avis | `200` |
+
+> **Choix de conception :** la création et la liste des avis sont imbriquées sous l'endroit, car un avis n'existe pas sans lui. La consultation, la modification et la suppression d'un avis passent par `/reviews/{id}`, puisque l'identifiant de l'avis suffit à le retrouver et que répéter `placeId` serait redondant.
+
+### Exemples
+
+**Créer un endroit**
+
+```http
+POST /api/v1/places
+Content-Type: application/json
+
+{
+  "name": "Bibliothèque",
+  "description": "Espace calme avec postes de travail et prêt de livres",
+  "category": "LIBRARY",
+  "address": "Pavillon A, local A-200",
+  "services": ["Wi-Fi", "Imprimante"]
+}
+```
+
+Réponse `201 Created` :
+
+```json
+{
+  "id": "3f1c2b8e-9d4a-4c1e-8a2f-5b6d7e8f9a01",
+  "name": "Bibliothèque",
+  "description": "Espace calme avec postes de travail et prêt de livres",
+  "category": "LIBRARY",
+  "address": "Pavillon A, local A-200",
+  "services": ["Wi-Fi", "Imprimante"],
+  "status": "ACTIVE",
+  "averageRating": null,
+  "reviewCount": 0,
+  "createdAt": "2026-09-24T14:00:00.000Z",
+  "updatedAt": "2026-09-24T14:00:00.000Z"
+}
+```
+
+**Ajouter un avis**
+
+```http
+POST /api/v1/places/3f1c2b8e-9d4a-4c1e-8a2f-5b6d7e8f9a01/reviews
+Content-Type: application/json
+
+{
+  "authorsName": "Diego",
+  "rating": 5,
+  "comment": "Endroit très calme, idéal pour étudier."
+}
+```
+
+## Filtrage et pagination
+
+`GET /api/v1/places` accepte les paramètres de requête suivants :
+
+| Paramètre | Type | Défaut | Contraintes |
+|---|---|---|---|
+| `category` | `PlaceCategory` | — | Valeur de l'énumération |
+| `page` | `integer` | `1` | ≥ 1 |
+| `limit` | `integer` | `10` | Entre 1 et 50 |
+
+Exemple : `GET /api/v1/places?category=LIBRARY&page=1&limit=5`
+
+```json
+{
+  "data": [ /* endroits */ ],
+  "meta": {
+    "page": 1,
+    "limit": 5,
+    "total": 12,
+    "totalPages": 3
+  }
+}
+```
+
+## Règles métier
+
+- Un endroit créé sans `status` reçoit `ACTIVE` ; sans `services`, il reçoit une liste vide.
+- Un avis ne peut être créé ou listé que pour un endroit existant (sinon `404`).
+- `averageRating` et `reviewCount` sont **recalculés automatiquement** à chaque création, modification ou suppression d'un avis. Ils ne peuvent pas être modifiés directement.
+- La suppression d'un endroit entraîne la **suppression en cascade** de tous ses avis.
+- `updatedAt` est mis à jour à chaque modification.
+
+## Validation et gestion des erreurs
+
+Un `ValidationPipe` global est configuré avec :
+
+- `whitelist: true` — retire les propriétés non déclarées dans le DTO ;
+- `forbidNonWhitelisted: true` — rejette la requête si une propriété inconnue est envoyée ;
+- `transform: true` — convertit les paramètres (ex. `page`, `limit`) vers leur type.
+
+Toutes les erreurs passent par un filtre global (`ProblemDetailsFilter`) qui renvoie une réponse `application/problem+json` conforme à la **RFC 9457** :
+
+```json
+{
+  "type": "about:blank",
+  "title": "NotFound",
+  "status": 404,
+  "detail": "Place 1234 introuvable",
+  "instance": "/api/v1/places/1234"
+}
+```
+
+| Code | Cas |
+|---|---|
+| `400 Bad Request` | Données invalides, champ inconnu, paramètre de requête invalide |
+| `404 Not Found` | Endroit ou avis introuvable |
+| `500 Internal Server Error` | Erreur inattendue |
+
+## Documentation Swagger
+
+Une fois l'API démarrée, la documentation interactive est disponible à :
+
+**http://localhost:3000/api/docs**
+
+Elle est générée automatiquement à partir des contrôleurs et des DTO grâce au plugin `@nestjs/swagger` (configuré dans `nest-cli.json`).
+
+## Tests avec Postman
+
+1. Ouvrir Postman, puis **Import** → sélectionner `postman_collection.json`.
+2. Dans les variables de la collection, régler `baseUrl` à `http://localhost:3000`.
+3. Démarrer l'API (`npm run start:dev`) et exécuter les requêtes.
+
+La collection couvre les 10 endpoints de l'API, regroupés par ressource.
+
+## Workflow Git
+
+Le projet suit le workflow par branches et issues vu en classe :
+
+- une **issue parente** (#1) pour le TP, avec des sous-issues pour chaque tâche ;
+- une branche par fonctionnalité (ex. `feature/4-json-persistance`, `feature/5-crud-places-reviews`) ;
+- des commits qui référencent l'issue concernée (`refs #N`) ;
+- une Pull Request vers `main` pour chaque fonctionnalité terminée ; les branches fusionnées sont conservées comme trace.
