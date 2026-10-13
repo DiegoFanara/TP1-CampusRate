@@ -6,7 +6,7 @@ import { PlaceCategory } from '../enums/place-category.enum';
 export class QueryPlacesDto {
   @IsOptional()
   @IsEnum(PlaceCategory)
-  category?: string;
+  category?: PlaceCategory;
 
   @IsOptional()
   @Type(() => Number)
