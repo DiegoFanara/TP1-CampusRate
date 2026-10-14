@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { PlaceCategory } from '../enums/place-category.enum';
 import { PlaceStatus } from '../enums/place-status.enum';
+import { toPublicJson } from '../../common/to-public-json';
 
 export type PlaceDocument = HydratedDocument<Place>;
 
@@ -40,3 +41,4 @@ export class Place {
 }
 
 export const PlaceSchema = SchemaFactory.createForClass(Place);
+PlaceSchema.set('toJSON', toPublicJson);
