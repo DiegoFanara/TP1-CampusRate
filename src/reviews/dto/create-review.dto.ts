@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, Max, Min, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, Max, Min, MinLength, MaxLength } from 'class-validator';
 
 //const rating
 

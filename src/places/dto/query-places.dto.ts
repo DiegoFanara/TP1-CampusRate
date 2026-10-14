@@ -1,4 +1,4 @@
-import { IsOptional, IsIn, IsInt, Min, Max, IsEnum } from 'class-validator';
+import { IsOptional, IsInt, Min, Max, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PlaceCategory } from '../enums/place-category.enum';
 
