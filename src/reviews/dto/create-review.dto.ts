@@ -6,6 +6,7 @@ export class CreateReviewDto {
     @Transform(trim)
     @IsString()
     @IsNotEmpty()
+    @MaxLength(100)
     authorsName: string;
 
     @IsInt()
