@@ -1,86 +1,83 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { DatabaseService } from '../database/database.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
-import { Place } from './entities/place.entity';
-import { PlaceStatus } from './enums/place-status.enum';
 import { QueryPlacesDto } from './dto/query-places.dto';
+import { PlaceCategory } from './enums/place-category.enum';
+import { Place, PlaceDocument } from './schemas/place.schema';
+import { Review } from '../reviews/schemas/review.schema';
 
 @Injectable()
 export class PlacesService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    @InjectModel(Place.name) private readonly placeModel: Model<Place>,
+    @InjectModel(Review.name) private readonly reviewModel: Model<Review>,
+  ) {}
 
-  async create(dto: CreatePlaceDto): Promise<Place> {
-    const data = await this.databaseService.read();
-
-    const newPlace: Place = {
-      id: randomUUID(),
+  async create(dto: CreatePlaceDto): Promise<PlaceDocument> {
+    return this.placeModel.create({
       name: dto.name,
       description: dto.description,
       category: dto.category,
       address: dto.address,
-      services: dto.services ?? [],
-      status: dto.status ?? PlaceStatus.ACTIVE,
-      averageRating: null,
-      reviewCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    data.places.push(newPlace);
-    await this.databaseService.write(data);
-    return newPlace;
+      services: dto.services,
+      status: dto.status,
+    });
   }
 
   async findAll(query: QueryPlacesDto) {
-    const data = await this.databaseService.read();
-    let places = data.places;
-
-    if (query.category) places = places.filter((p) => p.category === query.category);
+    const filter: { category?: PlaceCategory } = {};
+    if (query.category) filter.category = query.category;
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
-    const total = places.length;
-    const totalPages = Math.max(Math.ceil(total / limit), 1);
-    const start = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.placeModel
+        .find(filter)
+        .sort({ createdAt: 1, _id: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+      this.placeModel.countDocuments(filter).exec(),
+    ]);
 
     return {
-      data: places.slice(start, start + limit),
-      meta: { page, limit, total, totalPages },
+      data,
+      meta: { page, limit, total, totalPages: Math.max(Math.ceil(total / limit), 1) },
     };
   }
 
-  async findOne(id: string): Promise<Place> {
-    const data = await this.databaseService.read();
-    const place = data.places.find((p) => p.id === id);
+  async findOne(id: string): Promise<PlaceDocument> {
+    const place = await this.placeModel.findById(id).exec();
     if (!place) throw new NotFoundException(`Place ${id} introuvable`);
     return place;
   }
 
-  async update(id: string, dto: UpdatePlaceDto): Promise<Place> {
-    const data = await this.databaseService.read();
-    const index = data.places.findIndex((p) => p.id === id);
-    if (index === -1) throw new NotFoundException(`Place ${id} introuvable`);
-
-    const updated: Place = {
-      ...data.places[index],
-      ...dto,
-      updatedAt: new Date().toISOString(),
+  async update(id: string, dto: UpdatePlaceDto): Promise<PlaceDocument> {
+    const allowed = {
+      name: dto.name,
+      description: dto.description,
+      category: dto.category,
+      address: dto.address,
+      services: dto.services,
+      status: dto.status,
     };
+    const changes = Object.fromEntries(
+      Object.entries(allowed).filter(([, value]) => value !== undefined),
+    );
 
-    data.places[index] = updated;
-    await this.databaseService.write(data);
-    return updated;
+    const place = await this.placeModel
+      .findByIdAndUpdate(id, { $set: changes }, { new: true, runValidators: true })
+      .exec();
+    if (!place) throw new NotFoundException(`Place ${id} introuvable`);
+    return place;
   }
 
   async remove(id: string): Promise<void> {
-    const data = await this.databaseService.read();
-    const index = data.places.findIndex((p) => p.id === id);
-    if (index === -1) throw new NotFoundException(`Place ${id} introuvable`);
-
-    data.places.splice(index, 1);
-    data.reviews = data.reviews.filter((r) => r.placeId !== id);
-    await this.databaseService.write(data);
+    const place = await this.placeModel.findByIdAndDelete(id).exec();
+    if (!place) throw new NotFoundException(`Place ${id} introuvable`);
+    await this.reviewModel.deleteMany({ placeId: id }).exec();
   }
 }

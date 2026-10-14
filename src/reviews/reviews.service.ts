@@ -1,92 +1,93 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { DatabaseService } from '../database/database.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
-import { Review } from './entities/review.entity';
-import { Place } from '../places/entities/place.entity';
+import { Review, ReviewDocument } from './schemas/review.schema';
+import { Place } from '../places/schemas/place.schema';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    @InjectModel(Review.name) private readonly reviewModel: Model<Review>,
+    @InjectModel(Place.name) private readonly placeModel: Model<Place>,
+  ) {}
 
-  async create(placeId: string, dto: CreateReviewDto): Promise<Review> {
-    const data = await this.databaseService.read();
-    const place = data.places.find((p) => p.id === placeId);
-    if (!place) throw new NotFoundException(`Place ${placeId} introuvable`);
+  async create(placeId: string, dto: CreateReviewDto): Promise<ReviewDocument> {
+    await this.ensurePlaceExists(placeId);
 
-    const newReview: Review = {
-      id: randomUUID(),
+    const review = await this.reviewModel.create({
       placeId,
       authorsName: dto.authorsName,
       rating: dto.rating,
       comment: dto.comment,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    });
 
-    data.reviews.push(newReview);
-    this.recalculatePlaceRating(data, placeId);
-    await this.databaseService.write(data);
-    return newReview;
+    await this.recalculatePlaceRating(placeId);
+    return review;
   }
 
-  async findAllForPlace(placeId: string): Promise<Review[]> {
-    const data = await this.databaseService.read();
-    const place = data.places.find((p) => p.id === placeId);
-    
-    if (!place) throw new NotFoundException(`Place ${placeId} introuvable`);
-
-    return data.reviews.filter((r) => r.placeId === placeId);
+  async findAllForPlace(placeId: string): Promise<ReviewDocument[]> {
+    await this.ensurePlaceExists(placeId);
+    return this.reviewModel
+      .find({ placeId })
+      .sort({ createdAt: 1, _id: 1 })
+      .exec();
   }
 
-  async findOne(id: string): Promise<Review> {
-    const data = await this.databaseService.read();
-    const review = data.reviews.find((r) => r.id === id);
+  async findOne(id: string): Promise<ReviewDocument> {
+    const review = await this.reviewModel.findById(id).exec();
     if (!review) throw new NotFoundException(`Review ${id} introuvable`);
     return review;
   }
 
-  async update(id: string, dto: UpdateReviewDto): Promise<Review> {
-    const data = await this.databaseService.read();
-    const index = data.reviews.findIndex((r) => r.id === id);
-    if (index === -1) throw new NotFoundException(`Review ${id} introuvable`);
-
-    const updated: Review = {
-      ...data.reviews[index],
-      ...dto,
-      updatedAt: new Date().toISOString(),
+  async update(id: string, dto: UpdateReviewDto): Promise<ReviewDocument> {
+    const allowed = {
+      authorsName: dto.authorsName,
+      rating: dto.rating,
+      comment: dto.comment,
     };
+    const changes = Object.fromEntries(
+      Object.entries(allowed).filter(([, value]) => value !== undefined),
+    );
 
-    data.reviews[index] = updated;
-    this.recalculatePlaceRating(data, updated.placeId);
-    await this.databaseService.write(data);
-    return updated;
+    const review = await this.reviewModel
+      .findByIdAndUpdate(id, { $set: changes }, { new: true, runValidators: true })
+      .exec();
+    if (!review) throw new NotFoundException(`Review ${id} introuvable`);
+
+    await this.recalculatePlaceRating(review.placeId);
+    return review;
   }
 
   async remove(id: string): Promise<void> {
-    const data = await this.databaseService.read();
-    const index = data.reviews.findIndex((r) => r.id === id);
-    if (index === -1) throw new NotFoundException(`Review ${id} introuvable`);
+    const review = await this.reviewModel.findByIdAndDelete(id).exec();
+    if (!review) throw new NotFoundException(`Review ${id} introuvable`);
 
-    const placeId = data.reviews[index].placeId;
-    data.reviews.splice(index, 1);
-    this.recalculatePlaceRating(data, placeId);
-    await this.databaseService.write(data);
+    await this.recalculatePlaceRating(review.placeId);
   }
 
-  private recalculatePlaceRating(
-    data: { places: Place[]; reviews: Review[] },
-    placeId: string,
-  ): void {
-    const place = data.places.find((p) => p.id === placeId);
-    if (!place) return;
+  private async ensurePlaceExists(placeId: string): Promise<void> {
+    const exists = await this.placeModel.exists({ _id: placeId });
+    if (!exists) throw new NotFoundException(`Place ${placeId} introuvable`);
+  }
 
-    const placeReviews = data.reviews.filter((r) => r.placeId === placeId);
-    place.reviewCount = placeReviews.length;
-    place.averageRating = placeReviews.length
-      ? placeReviews.reduce((sum, r) => sum + r.rating, 0) / placeReviews.length
-      : null;
-    place.updatedAt = new Date().toISOString();
+  private async recalculatePlaceRating(placeId: string): Promise<void> {
+    const [stats] = await this.reviewModel.aggregate<{
+      count: number;
+      average: number;
+    }>([
+      { $match: { placeId } },
+      { $group: { _id: null, count: { $sum: 1 }, average: { $avg: '$rating' } } },
+    ]);
+
+    await this.placeModel
+      .findByIdAndUpdate(placeId, {
+        $set: {
+          reviewCount: stats?.count ?? 0,
+          averageRating: stats?.average ?? null,
+        },
+      })
+      .exec();
   }
 }

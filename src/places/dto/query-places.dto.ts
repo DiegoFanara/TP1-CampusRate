@@ -1,4 +1,4 @@
-import { IsOptional, IsIn, IsInt, Min, Max, IsEnum } from 'class-validator';
+import { IsOptional, IsInt, Min, Max, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PlaceCategory } from '../enums/place-category.enum';
 
@@ -6,7 +6,7 @@ import { PlaceCategory } from '../enums/place-category.enum';
 export class QueryPlacesDto {
   @IsOptional()
   @IsEnum(PlaceCategory)
-  category?: string;
+  category?: PlaceCategory;
 
   @IsOptional()
   @Type(() => Number)
