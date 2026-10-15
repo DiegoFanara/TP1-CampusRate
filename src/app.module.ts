@@ -7,6 +7,7 @@ import { PlacesModule } from './places/places.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { JsonContentTypeGuard } from './common/guards/json-content-type.guard';
 
 @Module({
   imports: [
@@ -30,6 +31,9 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     PlacesModule,
     ReviewsModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JsonContentTypeGuard },
+  ],
 })
 export class AppModule {}
