@@ -4,10 +4,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { ProblemDetailsFilter } from './common/filters/problem-details.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
   app.use(helmet());
 
   app.enableCors({
@@ -16,6 +18,8 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type'],
     maxAge: 600,
   });
+
+  app.useBodyParser('json', { limit: '10kb' });
 
   app.setGlobalPrefix('api/v1');
 

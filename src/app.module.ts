@@ -5,9 +5,13 @@ import * as Joi from 'joi';
 import databaseConfig from './config/database.config';
 import { PlacesModule } from './places/places.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { JsonContentTypeGuard } from './common/guards/json-content-type.guard';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig],
@@ -26,6 +30,10 @@ import { ReviewsModule } from './reviews/reviews.module';
     }),
     PlacesModule,
     ReviewsModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JsonContentTypeGuard },
   ],
 })
 export class AppModule {}
